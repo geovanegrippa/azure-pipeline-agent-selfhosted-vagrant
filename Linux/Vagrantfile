@@ -1,0 +1,33 @@
+require 'dotenv'
+Dotenv.load('.env')
+
+Vagrant.configure("2") do |config|
+
+  if Vagrant.has_plugin?("vagrant-vbguest")
+    config.vbguest.auto_update = false
+  end
+
+  config.vm.box = 'ubuntu/focal64'
+  config.vm.hostname = ENV['AZDO_AGENT_NAME']
+  config.vm.network "private_network", ip: "10.10.1.30"
+
+  # Script base (instalar pacotes, updates, etc.)
+  config.vm.provision 'shell', path: 'provision.sh'
+
+  # Script de instalação do agente com parâmetros do .env
+  config.vm.provision 'shell',
+    path: 'install-azdo-agent.sh',
+    privileged: false,
+    args: [
+      ENV['AZDO_URL'],
+      ENV['AZDO_PAT'],
+      ENV['AZDO_POOL'],
+      ENV['AZDO_AGENT_NAME']
+    ]
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = ENV['AZDO_AGENT_NAME']
+    vb.memory = 2048
+    vb.cpus = 1
+  end
+end

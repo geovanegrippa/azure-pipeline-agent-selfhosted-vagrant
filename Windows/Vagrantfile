@@ -1,0 +1,36 @@
+require 'dotenv'
+Dotenv.load
+
+Vagrant.configure("2") do |config|
+  
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  config.vm.box = 'jborean93/WindowsServer2022'
+  config.vm.hostname = ENV['AZDO_AGENT_NAME']
+  config.vm.network "private_network", ip: "10.10.1.31"
+
+  config.vm.communicator = "winrm"
+  config.winrm.transport = :negotiate
+  config.winrm.ssl = false
+  config.winrm.timeout = 1800
+  
+  # Script de instalação do agente com parâmetros do .env
+  config.vm.provision 'shell',
+    path: 'install-azdo-agent.ps1',
+    privileged: false,
+    args: [
+      ENV['AZDO_URL'],
+      ENV['AZDO_PAT'],
+      ENV['AZDO_POOL'],
+      ENV['AZDO_AGENT_NAME']
+    ]
+  
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = ENV['AZDO_AGENT_NAME']
+    vb.memory = 8192
+    vb.cpus = 2
+  end
+  
+end
